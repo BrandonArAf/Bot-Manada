@@ -23,9 +23,15 @@ const nodes = [
     secure: false,
   },
   {
-    name: 'Node2',
-    url: 'lava.link:80',
-    auth: 'dismusic',
+    name: 'Node2', 
+    url: 'lavalink.darrennathanael.com:80',
+    auth: 'LL123',
+    secure: false,
+  },
+  {
+    name: 'Node3',
+    url: 'lavalink.devz.cloud:80',
+    auth: 'mathiscool',
     secure: false,
   }
 ];
@@ -37,6 +43,9 @@ const kazagumo = new Kazagumo({
     if (guild) guild.shard.send(payload);
   }
 }, new Connectors.DiscordJS(client), nodes);
+kazagumo.shoukaku.on('error', (name, error) => {
+  console.error(`Error en nodo ${name}:`, error.message);
+});
 
 client.kazagumo = kazagumo;
 client.commands = new Collection();
