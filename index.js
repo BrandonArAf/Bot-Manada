@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { Player } = require('discord-player');
-const { DefaultExtractors } = require('@discord-player/extractor');
+const { DefaultExtractors, YoutubeiExtractor } = require('@discord-player/extractor');
 const fs = require('fs');
 const path = require('path');
 
@@ -21,7 +21,8 @@ const player = new Player(client, {
 });
 
 // 3. Cargar extractors con debug
-player.extractors.loadMulti(DefaultExtractors).then(() => {
+player.extractors.loadMulti(DefaultExtractors).then(async () => {
+  await player.extractors.register(YoutubeiExtractor, {});
   console.log('Extractors cargados:', player.extractors.store.map(e => e.identifier));
 });
 
