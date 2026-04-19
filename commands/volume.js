@@ -1,5 +1,4 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { useQueue } = require('discord-player');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -13,11 +12,11 @@ module.exports = {
         .setMaxValue(100)
     ),
 
-  async execute(interaction) {
-    const queue = useQueue(interaction.guild.id);
-    if (!queue) return interaction.reply('❌ No hay música reproduciéndose.');
+  async execute(interaction, kazagumo) {
+    const player = kazagumo.players.get(interaction.guild.id);
+    if (!player) return interaction.reply('❌ No hay música reproduciéndose.');
     const vol = interaction.options.getInteger('nivel');
-    queue.node.setVolume(vol);
-    await interaction.reply(`🔊 Volumen cambiado a **${vol}%**`);
+    player.setVolume(vol);
+    await interaction.reply(`🔊 Volumen: **${vol}%**`);
   }
 };

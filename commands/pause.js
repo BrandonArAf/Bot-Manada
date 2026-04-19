@@ -1,21 +1,14 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { useQueue } = require('discord-player');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('pause')
     .setDescription('Pausa o reanuda la música'),
 
-  async execute(interaction) {
-    const queue = useQueue(interaction.guild.id);
-    if (!queue) return interaction.reply('❌ No hay música reproduciéndose.');
-
-    if (queue.node.isPaused()) {
-      queue.node.resume();
-      await interaction.reply('▶️ Música reanudada.');
-    } else {
-      queue.node.pause();
-      await interaction.reply('⏸️ Música pausada.');
-    }
+  async execute(interaction, kazagumo) {
+    const player = kazagumo.players.get(interaction.guild.id);
+    if (!player) return interaction.reply('❌ No hay música reproduciéndose.');
+    player.paused ? player.pause(false) : player.pause(true);
+    await interaction.reply(player.paused ? '⏸️ Pausado.' : '▶️ Reanudado.');
   }
 };

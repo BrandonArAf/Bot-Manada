@@ -1,17 +1,16 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { useMainPlayer } = require('discord-player');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('play')
-    .setDescription('Reproduce una canción o playlist')
+    .setDescription('Reproduce una canción')
     .addStringOption(opt =>
       opt.setName('cancion')
         .setDescription('Nombre o URL de la canción')
         .setRequired(true)
     ),
 
-  async execute(interaction, player) {
+  async execute(interaction, kazagumo) {
     await interaction.deferReply();
     const query = interaction.options.getString('cancion');
     const channel = interaction.member.voice.channel;
@@ -20,23 +19,30 @@ module.exports = {
       return interaction.editReply('❌ Debes estar en un canal de voz!');
     }
 
-    const p = useMainPlayer();
-    const result = await p.play(channel, query, {
-      nodeOptions: {
-        metadata: { channel: interaction.channel },
-        selfDeaf: true,
-        volume: 80,
-        leaveOnEmpty: true,
-        leaveOnEmptyCooldown: 30000,
-        leaveOnEnd: true,
-        leaveOnEndCooldown: 30000,
-      }
-    });
+    const result = await kazagumo.search(query, { requester: interaction.user });
 
-    if (!result || !result.track) {
+    if (!result || !result.tracks.length) {
       return interaction.editReply('❌ No encontré esa canción.');
     }
 
-    await interaction.editReply(`🎵 Buscando: **${query}**...`);
+    let player = kazagumo.players.get(interaction.guild.id);
+    if (!player) {
+      player = await kazagumo.createPlayer({
+        guildId: interaction.guild.id,
+        voiceId: channel.id,
+        textId: interaction.channel.id,
+        deaf: true,
+      });
+    }
+
+    if (result.type === 'PLAYLIST') {
+      for (const track of result.tracks) player.queue.add(track);
+      await interaction.editReply(`✅ Playlist **${result.playlistName}** agregada (${result.tracks.length} canciones)`);
+    } else {
+      player.queue.add(result.tracks[0]);
+      await interaction.editReply(`✅ Agregado: **${result.tracks[0].title}**`);
+    }
+
+    if (!player.playing && !player.paused) player.play();
   }
 };

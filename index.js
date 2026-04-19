@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
-const { Player } = require('discord-player');
-const { DefaultExtractors } = require('@discord-player/extractor');
+const { Kazagumo, Plugins } = require('kazagumo');
+const { Shoukaku, Connectors } = require('shoukaku');
 const fs = require('fs');
 const path = require('path');
 
@@ -14,18 +14,34 @@ const client = new Client({
   ]
 });
 
-const player = new Player(client, {
-  skipFFmpeg: false,
-  useLegacyFFmpeg: false,
-});
+// Nodos Lavalink públicos gratuitos
+const nodes = [
+  {
+    name: 'Node1',
+    url: 'lavalink.jirayu.net:13592',
+    auth: 'youshallnotpass',
+    secure: false,
+  },
+  {
+    name: 'Node2',
+    url: 'lava.link:80',
+    auth: 'dismusic',
+    secure: false,
+  }
+];
 
-// Cargar extractors
-(async () => {
-  await player.extractors.loadMulti(DefaultExtractors);
-  console.log('Extractors cargados:', player.extractors.store.map(e => e.identifier));
-})();
+const kazagumo = new Kazagumo({
+  defaultSearchEngine: 'youtube',
+  send: (guildId, payload) => {
+    const guild = client.guilds.cache.get(guildId);
+    if (guild) guild.shard.send(payload);
+  }
+}, new Connectors.DiscordJS(client), nodes);
 
+client.kazagumo = kazagumo;
 client.commands = new Collection();
+
+// Cargar comandos
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith('.js'));
 for (const file of commandFiles) {
@@ -33,31 +49,37 @@ for (const file of commandFiles) {
   client.commands.set(command.data.name, command);
 }
 
-player.events.on('playerStart', (queue, track) => {
-  queue.metadata.channel.send(`▶️ Reproduciendo: **${track.title}** por ${track.author}`);
+// Eventos del player
+kazagumo.on('playerStart', (player, track) => {
+  const channel = client.channels.cache.get(player.textId);
+  if (channel) channel.send(`▶️ Reproduciendo: **${track.title}** por **${track.author}**`);
 });
 
-player.events.on('audioTrackAdd', (queue, track) => {
-  queue.metadata.channel.send(`✅ Agregado a la cola: **${track.title}**`);
+kazagumo.on('playerEnd', (player) => {
+  const channel = client.channels.cache.get(player.textId);
+  if (channel) channel.send('✅ Cola vacía, desconectando...');
 });
 
-player.events.on('emptyQueue', (queue) => {
-  queue.metadata.channel.send('✅ Cola vacía, desconectando...');
+kazagumo.on('playerEmpty', (player) => {
+  const channel = client.channels.cache.get(player.textId);
+  if (channel) channel.send('✅ Cola vacía, desconectando...');
+  player.destroy();
 });
 
-player.events.on('error', (queue, error) => {
-  console.error('Error en el player:', error);
+kazagumo.on('playerClosed', (player) => {
+  player.destroy();
 });
 
+// Slash commands
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
   const command = client.commands.get(interaction.commandName);
   if (!command) return;
   try {
-    await command.execute(interaction, player);
+    await command.execute(interaction, kazagumo);
   } catch (error) {
     console.error(error);
-    await interaction.reply({ content: '❌ Hubo un error ejecutando este comando.', ephemeral: true });
+    await interaction.reply({ content: '❌ Error ejecutando el comando.', ephemeral: true });
   }
 });
 
