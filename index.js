@@ -1,15 +1,11 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { Player } = require('discord-player');
-const { createFFmpegStream } = require('@discord-player/ffmpeg');
-const player = new Player(client, {
-  skipFFmpeg: false,
-  useLegacyFFmpeg: false,
-});
 const { DefaultExtractors } = require('@discord-player/extractor');
 const fs = require('fs');
 const path = require('path');
 
+// Primero el cliente
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -19,8 +15,10 @@ const client = new Client({
   ]
 });
 
-// Inicializar el player de música
-const player = new Player(client);
+// Luego el player (después del cliente)
+const player = new Player(client, {
+  skipFFmpeg: false,
+});
 player.extractors.loadMulti(DefaultExtractors);
 
 client.commands = new Collection();
@@ -51,13 +49,11 @@ player.events.on('error', (queue, error) => {
   console.error('Error en el player:', error);
 });
 
-// Manejar slash commands
+// Slash commands
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
-
   const command = client.commands.get(interaction.commandName);
   if (!command) return;
-
   try {
     await command.execute(interaction, player);
   } catch (error) {
