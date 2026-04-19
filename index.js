@@ -1,6 +1,9 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { Player } = require('discord-player');
+player.extractors.loadMulti(DefaultExtractors).then(() => {
+  console.log('Extractors cargados:', player.extractors.store.map(e => e.identifier));
+});
 const { DefaultExtractors } = require('@discord-player/extractor');
 const fs = require('fs');
 const path = require('path');
