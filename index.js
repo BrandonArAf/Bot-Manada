@@ -21,6 +21,8 @@ const player = new Player(client, {
 });
 player.extractors.loadMulti(DefaultExtractors);
 
+process.env.DP_FORCE_YTDL_MOD = 'yt-dlp-exec';
+
 client.commands = new Collection();
 
 // Cargar comandos
